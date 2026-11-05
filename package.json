@@ -10,7 +10,8 @@
     "worker": "tsx worker/index.ts",
     "seed:supabase": "tsx scripts/seed-supabase.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "node tests/e2e.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.5",

@@ -136,7 +136,7 @@ tests/                 unit tests (npm test)
 
 ## Scripts
 
-`npm run dev` · `npm run build` · `npm start` · `npm run worker` · `npm run seed:supabase` · `npm run typecheck` · `npm test`
+`npm run dev` · `npm run build` · `npm start` · `npm run worker` · `npm run seed:supabase` · `npm run typecheck` · `npm test` (unit) · `npm run test:e2e` (boots a server on port 3100 with throwaway data and drives the bot end to end: sign-up, tasks, restock detection, live alerts, purchase log, error handling, user isolation; run `npm run build` first)
 
 ## Limitations
 
