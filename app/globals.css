@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --chart-series: #8b5cf6;
+  --chart-grid: #1f212b;
+  --chart-axis: #8a8ea3;
+  --chart-ref: #5c6075;
+}
+
+html,
+body {
+  background: #07070a;
+  color: #e4e5ee;
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* subtle electric backdrop */
+.app-backdrop {
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(139, 92, 246, 0.12), transparent 60%),
+    radial-gradient(900px 400px at -10% 10%, rgba(59, 130, 246, 0.08), transparent 60%),
+    #07070a;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-ink-700/80 bg-ink-850/80 shadow-panel backdrop-blur;
+  }
+  .panel-head {
+    @apply flex items-center justify-between gap-3 border-b border-ink-700/70 px-5 py-3.5;
+  }
+  .panel-title {
+    @apply text-sm font-semibold tracking-tight text-ink-100;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-ink-300;
+  }
+  .input {
+    @apply w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-400
+      outline-none transition focus:border-volt-500 focus:ring-2 focus:ring-volt-500/25 disabled:opacity-50;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition
+      disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-400/60;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-volt-600 to-surge-600 text-white shadow-glow hover:brightness-110;
+  }
+  .btn-secondary {
+    @apply btn border border-ink-600 bg-ink-800 text-ink-100 hover:border-ink-500 hover:bg-ink-750;
+  }
+  .btn-ghost {
+    @apply btn text-ink-200 hover:bg-ink-800 hover:text-ink-100;
+  }
+  .btn-danger {
+    @apply btn border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-xs;
+  }
+  .table-head th {
+    @apply whitespace-nowrap px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-400;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2d3a;
+  border-radius: 999px;
+  border: 2px solid #0a0a0e;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
