@@ -66,6 +66,15 @@ How it behaves:
 
 It runs wherever PokéPulse runs, so your computer has to be on and `npm start` running for it to watch around the clock.
 
+## Real data only mode
+
+Flip **Real data only** in the sidebar (per user) to switch the simulator off and hide everything it produced:
+
+- Stock and prices with no real source show as **No data yet**.
+- The dashboard, activity feed, analytics and purchase assistant only show events from Pokémon Center emails (tagged **EMAIL**) or authorized APIs (tagged **LIVE**).
+- Tasks show how they're watched. Pokémon Center tasks are **Email watch**. Tasks for retailers with no real source are **No real source** and won't alert.
+- Switching it on clears the simulated status, counts, prices and timestamps from your tasks. Switching it off brings the simulator back.
+
 ## Simulated vs. live data
 
 This is a hard rule throughout the app. **Every stock data point records where it came from** (`data_source = 'simulated' | 'live'`), and the UI labels it everywhere:

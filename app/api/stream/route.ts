@@ -14,6 +14,7 @@ export async function GET(req: Request) {
   if (!user) return new Response('Unauthorized', { status: 401 });
 
   const store = getStore();
+  const realOnly = Boolean((await store.getSettings(user.id)).real_only);
   const encoder = new TextEncoder();
   let cleanup = () => {};
 
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
         }
       };
       const unsubscribe = store.subscribe((e) => {
+        if (realOnly && e.type === 'activity' && e.event.data_source === 'simulated') return;
         if (e.type === 'task' && e.task.user_id !== user.id) return;
         if (e.type === 'notification' && e.notification.user_id !== user.id) return;
         if (e.type === 'log' && e.log.user_id !== user.id) return;

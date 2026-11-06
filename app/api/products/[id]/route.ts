@@ -1,3 +1,5 @@
+import { isRealOnly } from '@/lib/mode';
+import { maskProduct, maskTask, realHistory } from '@/lib/realonly';
 import { requireUser } from '@/lib/auth';
 import { HttpError, route } from '@/lib/http';
 import { getStore } from '@/lib/store';
@@ -6,7 +8,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export const dynamic = 'force-dynamic';
 
 export const GET = route<Ctx>(async (req, { params }) => {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const days = Math.min(Math.max(Number(new URL(req.url).searchParams.get('days') ?? 30), 1), 90);
   const store = getStore();
@@ -18,5 +20,6 @@ export const GET = route<Ctx>(async (req, { params }) => {
     limit: 5000,
     desc: false,
   });
+  if (await isRealOnly(user.id)) return { product: maskProduct(product), history: realHistory(history) };
   return { product, history };
 });

@@ -7,7 +7,7 @@ import useSWR from 'swr';
 import { useToast } from '@/components/LiveProvider';
 import { TaskForm } from '@/components/TaskForm';
 import { TaskHistory } from '@/components/TaskHistory';
-import { Drawer, EmptyState, ErrorBlock, LoadingBlock, PageHeader, RetailerTag, SourceBadge, TaskStatusBadge, TimeAgo } from '@/components/ui';
+import { Drawer, EmptyState, ErrorBlock, LoadingBlock, PageHeader, RetailerTag, SourceBadge, TaskStatusBadge, TimeAgo, WatchBadge } from '@/components/ui';
 import { api, fmtDuration, fmtPrice } from '@/lib/client';
 import { RETAILERS } from '@/lib/retailers';
 import type { MonitoringTask, TaskStatus } from '@/lib/types';
@@ -181,7 +181,7 @@ export default function TasksPage() {
                     <td className="max-w-[260px] px-4 py-3">
                       <div className="truncate font-medium text-ink-100">{t.product_name}</div>
                       <div className="mt-1 flex items-center gap-2">
-                        <SourceBadge source={t.data_source} compact />
+                        {'watch' in t ? <WatchBadge watch={(t as MonitoringTask & { watch: 'email' | 'api' | 'none' }).watch} /> : <SourceBadge source={t.data_source} compact />}
                         {t.error_message && t.status === 'error' && (
                           <span className="truncate text-[11px] text-red-300" title={t.error_message}>
                             {t.error_message}

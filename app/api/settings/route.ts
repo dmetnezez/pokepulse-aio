@@ -1,3 +1,5 @@
+import { realOnlyResetPatch } from '@/lib/realonly';
+import { getScheduler } from '@/lib/monitor/scheduler';
 import { requireUser } from '@/lib/auth';
 import { readJson, route } from '@/lib/http';
 import { getStore } from '@/lib/store';
@@ -44,5 +46,17 @@ export const PUT = route(async (req) => {
     patch.email_watch_last_uid = null;
     patch.email_watch_status = null;
   }
-  return { settings: present(await store.updateSettings(user.id, patch)) };
+  if (patch.real_only === true && !before.real_only) {
+    const tasks = await store.listTasks(user.id);
+    const products = new Map((await store.getProductsByIds([...new Set(tasks.map((t) => t.product_id))])).map((p) => [p.id, p]));
+    await Promise.all(
+      tasks.map((t) => {
+        const reset = realOnlyResetPatch(t, products.get(t.product_id)?.data_source === 'simulated');
+        return reset ? store.updateTask(t.id, reset) : null;
+      }),
+    );
+  }
+  const saved = await store.updateSettings(user.id, patch);
+  if (patch.real_only !== undefined) getScheduler().invalidateModes();
+  return { settings: present(saved) };
 });

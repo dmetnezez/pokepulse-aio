@@ -150,7 +150,7 @@ function ProductCard({ p, onFav, onMonitor, onDetail }: { p: Row; onFav: () => v
         </button>
         <div className="absolute left-3 top-3 flex gap-1.5">
           <StockBadge status={p.stock_status} />
-          <SourceBadge source={p.data_source} compact />
+          {p.stock_status !== 'unknown' && <SourceBadge source={p.data_source} compact />}
         </div>
         <button
           onClick={onFav}

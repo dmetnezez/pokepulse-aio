@@ -47,6 +47,8 @@ export interface Store {
 
   /** Settings rows of every user who has the inbox watcher switched on. */
   listEmailWatchSettings(): Promise<UserSettings[]>;
+  /** Every user's settings (small table; used by the scheduler for per-user modes). */
+  listAllSettings(): Promise<UserSettings[]>;
 
   listRetailers(): Promise<Retailer[]>;
 

@@ -158,6 +158,10 @@ export class LocalStore implements Store {
     return { ...s };
   }
 
+  async listAllSettings() {
+    return this.db.settings.map((s) => ({ ...EMAIL_WATCH_DEFAULTS, ...s }));
+  }
+
   async listEmailWatchSettings() {
     return this.db.settings.filter((s) => s.email_watch_enabled).map((s) => ({ ...EMAIL_WATCH_DEFAULTS, ...s }));
   }

@@ -113,6 +113,8 @@ export interface UserSettings {
   email_watch_checked_at: string | null;
   /** open the drop page in the default browser on this computer when a drop email arrives */
   auto_open_links: boolean;
+  /** hide everything the simulator produced and stop simulating this user's tasks */
+  real_only: boolean;
 }
 
 export interface MonitoringTask {

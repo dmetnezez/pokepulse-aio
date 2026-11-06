@@ -3,6 +3,7 @@ import { isAvailable } from '../types';
 import { RETAILERS } from '../retailers';
 import { getStore } from '../store';
 import { liveIntegrationStatus } from '../monitor/adapters';
+import { maskProduct, maskTask, realHistory } from '../realonly';
 
 /** Midnight in Toronto (Eastern time), the reference "today" for a Canadian restock dashboard. */
 export function startOfTodayEastern(now = new Date()): Date {
@@ -28,22 +29,27 @@ export function toActivity(rows: StockHistoryRow[], products: Map<string, Produc
   });
 }
 
-export async function dashboardStats(userId: string) {
+export async function dashboardStats(userId: string, realOnly = false) {
   const store = getStore();
-  const [tasks, products, purchases] = await Promise.all([
+  const [rawTasks, rawProducts, purchases] = await Promise.all([
     store.listTasks(userId),
     store.listProducts(),
     store.listPurchaseActivity(userId, 1000),
   ]);
+  const products = realOnly ? rawProducts.map(maskProduct) : rawProducts;
+  const tasks = realOnly ? rawTasks.map(maskTask) : rawTasks;
+  const keep = (rows: StockHistoryRow[]) => (realOnly ? realHistory(rows) : rows);
   const byId = new Map(products.map((p) => [p.id, p]));
   const today = startOfTodayEastern().toISOString();
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
-  const [todayEvents, weekRestocks, recent] = await Promise.all([
-    store.listStockHistory({ since: today, eventTypes: ['restock'], limit: 5000 }),
-    store.listStockHistory({ since: weekAgo, eventTypes: ['restock'], limit: 5000 }),
-    store.listStockHistory({ eventTypes: ['restock', 'sold_out', 'price_change'], limit: 40 }),
-  ]);
+  const [todayEvents, weekRestocks, recent] = (
+    await Promise.all([
+      store.listStockHistory({ since: today, eventTypes: ['restock'], limit: 5000 }),
+      store.listStockHistory({ since: weekAgo, eventTypes: ['restock'], limit: 5000 }),
+      store.listStockHistory({ eventTypes: ['restock', 'sold_out', 'price_change'], limit: realOnly ? 5000 : 40 }),
+    ])
+  ).map(keep);
 
   const myProducts = new Set(tasks.map((t) => t.product_id));
   const statusCounts = tasks.reduce(
@@ -63,8 +69,9 @@ export async function dashboardStats(userId: string) {
     restocksTodayWatched: todayEvents.filter((e) => myProducts.has(e.product_id)).length,
     successfulPurchases: purchases.filter((p) => p.action === 'purchased').reduce((n, p) => n + p.quantity, 0),
     avgDetectionMs: latencies.length ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
-    recentActivity: toActivity(recent, byId),
-    simulatedShare: products.length ? products.filter((p) => p.data_source === 'simulated').length / products.length : 1,
+    recentActivity: toActivity(recent.slice(0, 40), byId),
+    realOnly,
+    simulatedShare: realOnly ? 0 : products.length ? products.filter((p) => p.data_source === 'simulated').length / products.length : 1,
   };
 }
 
@@ -76,10 +83,12 @@ export function systemInfo() {
   };
 }
 
-export async function analytics(days: number) {
+export async function analytics(days: number, realOnly = false) {
   const store = getStore();
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const [products, history] = await Promise.all([store.listProducts(), store.listStockHistory({ since, limit: 200_000, desc: false })]);
+  const [rawProducts, rawHistory] = await Promise.all([store.listProducts(), store.listStockHistory({ since, limit: 200_000, desc: false })]);
+  const products = realOnly ? rawProducts.map(maskProduct) : rawProducts;
+  const history = realOnly ? realHistory(rawHistory) : rawHistory;
   const byId = new Map(products.map((p) => [p.id, p]));
   const restocks = history.filter((h) => h.event_type === 'restock');
 

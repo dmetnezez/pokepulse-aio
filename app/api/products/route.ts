@@ -1,3 +1,5 @@
+import { isRealOnly } from '@/lib/mode';
+import { maskProduct, maskTask, realHistory } from '@/lib/realonly';
 import { requireUser } from '@/lib/auth';
 import { route } from '@/lib/http';
 import { getStore } from '@/lib/store';
@@ -24,7 +26,8 @@ export const GET = route(async (req) => {
   const sortKey = (sp.get('sort') ?? 'restock') as keyof typeof SORTS;
 
   const store = getStore();
-  const [products, favs, tasks] = await Promise.all([store.listProducts(), store.listFavourites(user.id), store.listTasks(user.id)]);
+  const [rawProducts, favs, tasks, realOnly] = await Promise.all([store.listProducts(), store.listFavourites(user.id), store.listTasks(user.id), isRealOnly(user.id)]);
+  const products = realOnly ? rawProducts.map(maskProduct) : rawProducts;
   const favSet = new Set(favs);
   const watched = new Set(tasks.map((t) => t.product_id));
 

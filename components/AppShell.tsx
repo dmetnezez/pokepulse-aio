@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import type { ReactNode } from 'react';
-import { SWRConfig } from 'swr';
+import { useState, type ReactNode } from 'react';
+import useSWR, { SWRConfig } from 'swr';
 import { api, fetcher } from '@/lib/client';
 import { LiveProvider, useLive } from './LiveProvider';
 
@@ -100,12 +100,8 @@ function Sidebar({ user, mode }: { user: ShellUser; mode: 'local' | 'supabase' }
         })}
       </nav>
       <div className="mt-auto space-y-3">
-        <div className="rounded-xl border border-ink-700 bg-ink-850 p-3 text-[11px] leading-relaxed text-ink-300">
-          <div className="mb-1 font-semibold uppercase tracking-wider text-ink-200">{mode === 'local' ? 'Local demo mode' : 'Supabase connected'}</div>
-          {mode === 'local'
-            ? 'Data is stored in .data/ on this server. Configure Supabase for production.'
-            : 'Auth and data are stored in your Supabase project.'}
-        </div>
+        <RealOnlySwitch />
+        <div className="px-1 text-[10px] text-ink-500">{mode === 'local' ? 'Data stored on this computer (.data/)' : 'Connected to Supabase'}</div>
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
           <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-volt-600 to-surge-600 text-xs font-bold text-white">
             {(user.display_name || user.email).slice(0, 1).toUpperCase()}
@@ -120,6 +116,41 @@ function Sidebar({ user, mode }: { user: ShellUser; mode: 'local' | 'supabase' }
         </div>
       </div>
     </aside>
+  );
+}
+
+function RealOnlySwitch() {
+  const { data } = useSWR<{ settings: { real_only: boolean } }>('/api/settings');
+  const [busy, setBusy] = useState(false);
+  const on = Boolean(data?.settings.real_only);
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      await api('/api/settings', { method: 'PUT', json: { real_only: !on } });
+      window.location.reload(); // refresh every view and the live stream with the new mode
+    } catch {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={clsx('rounded-xl border p-3', on ? 'border-amber-400/40 bg-amber-400/[0.06]' : 'border-ink-700 bg-ink-850')}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-ink-100">Real data only</span>
+        <button
+          role="switch"
+          aria-checked={on}
+          aria-label="Real data only"
+          disabled={!data || busy}
+          onClick={toggle}
+          className={clsx('relative h-5 w-9 shrink-0 rounded-full transition disabled:opacity-50', on ? 'bg-amber-500' : 'bg-ink-600')}
+        >
+          <span className={clsx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all', on ? 'left-[18px]' : 'left-0.5')} />
+        </button>
+      </div>
+      <p className="mt-1 text-[11px] leading-snug text-ink-400">
+        {on ? 'Simulator off. Showing only Pokémon Center emails and authorized APIs.' : 'Includes simulated demo stock (tagged SIM).'}
+      </p>
+    </div>
   );
 }
 

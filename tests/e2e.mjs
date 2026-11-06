@@ -192,6 +192,29 @@ async function main() {
     const conn = await api('/api/email-watch/check', { method: 'POST' });
     check('connection test reports a clear status', conn.status === 200 && typeof conn.body?.result?.status === 'string', conn.body?.result?.status);
 
+    // ── real data only mode ──
+    const rawBefore = new Set((await api('/api/tasks')).body.tasks.map((t) => t.id));
+    check('real-only mode switches on', (await api('/api/settings', { method: 'PUT', json: { real_only: true } })).body?.settings?.real_only === true);
+    const rd = (await api('/api/dashboard')).body;
+    check('dashboard hides simulated data', rd.realOnly === true && rd.simulatedShare === 0 && rd.recentActivity.every((a) => a.data_source !== 'simulated'),
+      `${rd.recentActivity.length} real events`);
+    const rp = (await api('/api/products')).body.products;
+    check('products show no simulated stock or prices', rp.every((p) => p.data_source !== 'simulated' || (p.stock_status === 'unknown' && p.current_price === null)));
+    const ra = (await api('/api/analytics?days=30')).body;
+    check('analytics contain only real events', ra.totals.simulatedShare === 0 || ra.totals.observations === 0, `${ra.totals.observations} real observations`);
+    const rt = (await api('/api/tasks')).body.tasks;
+    check('tasks show how they are watched', rt.every((t) => ['email', 'api', 'none'].includes(t.watch)), [...new Set(rt.map((t) => t.watch))].join('/'));
+    // Ask for immediate checks, wait, then compare the RAW check counters (real-only off) with before.
+    await api('/api/tasks/bulk', { method: 'POST', json: { ids: rt.filter((t) => t.is_active).map((t) => t.id), action: 'check_now' } });
+    await sleep(8000);
+    const pcEmail = await api('/api/email-watch/test', { method: 'POST', json: { subject: "It's here! Pokémon Center exclusive drop", body: 'https://www.pokemoncenter.com/en-ca' } });
+    check('real email still alerts in real-only mode', pcEmail.body?.result?.notifications?.some((n) => n.channel === 'browser' && n.status === 'sent'));
+    await api('/api/settings', { method: 'PUT', json: { real_only: false } });
+    const rawAfter = (await api('/api/tasks')).body.tasks.filter((t) => t.data_source === 'simulated' && rawBefore.has(t.id));
+    // Switching real-only on wipes simulated counters to 0; if the simulator really stopped they stay 0.
+    const advanced = rawAfter.filter((t) => t.check_count !== 0);
+    check('simulator stopped for real-only user', rawAfter.length > 0 && advanced.length === 0, `${rawAfter.length} simulated tasks, ${advanced.length} were checked`);
+
     // ── analytics ──
     const an = (await api('/api/analytics?days=30')).body;
     check('analytics computes', an?.totals?.restocks > 0 && an.byRetailer.length === 7, `${an?.totals?.restocks} restocks in 30d`);

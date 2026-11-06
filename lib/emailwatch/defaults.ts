@@ -10,4 +10,5 @@ export const EMAIL_WATCH_DEFAULTS = {
   email_watch_status: null as string | null,
   email_watch_checked_at: null as string | null,
   auto_open_links: false,
+  real_only: false,
 };

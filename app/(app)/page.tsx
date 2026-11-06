@@ -23,6 +23,7 @@ interface Dashboard {
   avgDetectionMs: number | null;
   recentActivity: ActivityItem[];
   simulatedShare: number;
+  realOnly?: boolean;
   system: {
     store: string;
     workerMode: string;
@@ -59,6 +60,17 @@ export default function DashboardPage() {
         }
       />
       <SimulatedBanner share={data.simulatedShare} />
+      {data.realOnly && (
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100/90">
+          <span>
+            <span className="font-semibold text-amber-200">Real data only.</span> Simulated stock is hidden and the simulator is off. Activity appears here when a
+            Pokémon Center email arrives.
+          </span>
+          <Link href="/alerts" className="ml-auto font-medium text-amber-300 hover:text-amber-200">
+            Inbox watcher settings →
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Active tasks" value={data.activeTasks} sub={`${data.totalTasks} total`} icon={<ListChecks className="h-4 w-4" />} />

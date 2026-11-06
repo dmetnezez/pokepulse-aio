@@ -1,3 +1,5 @@
+import { isRealOnly } from '@/lib/mode';
+import { maskProduct, maskTask, realHistory } from '@/lib/realonly';
 import { requireUser } from '@/lib/auth';
 import { readJson, route } from '@/lib/http';
 import { deleteTask, getOwnedTask, updateTask } from '@/lib/services/tasks';
@@ -19,6 +21,8 @@ export const GET = route<Ctx>(async (_req, { params }) => {
     store.listLogs({ userId: user.id, taskId: id, limit: 100 }),
     store.listNotifications(user.id, 300).then((n) => n.filter((x) => x.task_id === id).slice(0, 50)),
   ]);
+  if (await isRealOnly(user.id))
+    return { task: maskTask(task), product: product && maskProduct(product), history: realHistory(history), logs, notifications };
   return { task, product, history, logs, notifications };
 });
 

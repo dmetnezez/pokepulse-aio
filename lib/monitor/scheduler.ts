@@ -86,9 +86,26 @@ export class Scheduler {
     this.ticking = true;
     try {
       const store = getStore();
-      const due = (await store.listDueTasks(new Date().toISOString(), this.batchSize)).filter((t) => !this.inflight.has(t.id));
+      let due = (await store.listDueTasks(new Date().toISOString(), this.batchSize)).filter((t) => !this.inflight.has(t.id));
       this.lastTickAt = new Date().toISOString();
-      await this.sweepCatalogue();
+      const modes = await this.userModes();
+      if (!modes.allRealOnly) await this.sweepCatalogue();
+
+      // Real-only users: never simulate their tasks. Park them (an email or live API is their only source).
+      const parked = due.filter((t) => t.data_source === 'simulated' && modes.realOnly.has(t.user_id));
+      if (parked.length) {
+        due = due.filter((t) => !parked.includes(t));
+        const now = Date.now();
+        await Promise.all(
+          parked.map((t) =>
+            store.updateTask(t.id, {
+              next_check_at: new Date(now + 5 * 60_000).toISOString(),
+              // an email-confirmed restock stays visible for 30 minutes, then goes back to watching
+              ...(t.status === 'restock_detected' && now - new Date(t.last_checked_at ?? 0).getTime() > 30 * 60_000 ? { status: 'monitoring' as const } : {}),
+            }),
+          ),
+        );
+      }
       if (!due.length) return;
 
       const groups = new Map<string, { retailer: RetailerId; job: Job }>();
@@ -129,6 +146,22 @@ export class Scheduler {
       this.inflight.add(`sweep:${p.id}`);
       this.enqueue(p.retailer_id, { productId: p.id, source: 'simulated', taskIds: [], sweepKey: `sweep:${p.id}` });
     }
+  }
+
+  private modesCache: { at: number; realOnly: Set<string>; allRealOnly: boolean } | null = null;
+
+  /** Call when a user's mode changes so the next check sees it immediately. */
+  invalidateModes() {
+    this.modesCache = null;
+  }
+
+  /** Which users are in real-only mode (cached for 10s). */
+  private async userModes() {
+    if (this.modesCache && Date.now() - this.modesCache.at < 10_000) return this.modesCache;
+    const all = await getStore().listAllSettings();
+    const realOnly = new Set(all.filter((s) => s.real_only).map((s) => s.user_id));
+    this.modesCache = { at: Date.now(), realOnly, allRealOnly: all.length > 0 && realOnly.size === all.length };
+    return this.modesCache;
   }
 
   private lane(retailer: RetailerId): RetailerLane {
@@ -175,7 +208,11 @@ export class Scheduler {
         store.getProduct(job.productId),
         ...job.taskIds.map((id) => store.getTask(id)),
       ]);
-      const live = (tasks as (MonitoringTask | null)[]).filter((t): t is MonitoringTask => Boolean(t && t.is_active));
+      const modes = await this.userModes();
+      // Re-check the mode at run time: a job queued before the user switched to real-only must not simulate.
+      const live = (tasks as (MonitoringTask | null)[]).filter(
+        (t): t is MonitoringTask => Boolean(t && t.is_active && !(t.data_source === 'simulated' && modes.realOnly.has(t.user_id))),
+      );
       if (!product || (!live.length && !job.sweepKey)) return;
       const outcome = await checkProduct(product, live, job.source);
       this.totalChecks++;

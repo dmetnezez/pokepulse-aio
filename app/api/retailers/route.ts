@@ -1,3 +1,5 @@
+import { isRealOnly } from '@/lib/mode';
+import { maskProduct, maskTask, realHistory } from '@/lib/realonly';
 import { requireUser } from '@/lib/auth';
 import { route } from '@/lib/http';
 import { liveIntegrationStatus } from '@/lib/monitor/adapters';
@@ -9,7 +11,8 @@ export const dynamic = 'force-dynamic';
 export const GET = route(async () => {
   const user = await requireUser();
   const store = getStore();
-  const [retailers, products, tasks] = await Promise.all([store.listRetailers(), store.listProducts(), store.listTasks(user.id)]);
+  const [retailers, rawProducts, tasks, realOnly] = await Promise.all([store.listRetailers(), store.listProducts(), store.listTasks(user.id), isRealOnly(user.id)]);
+  const products = realOnly ? rawProducts.map(maskProduct) : rawProducts;
   const live = liveIntegrationStatus();
   return {
     retailers: retailers.map((r) => {
