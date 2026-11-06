@@ -45,6 +45,9 @@ export interface Store {
   getSettings(userId: string): Promise<UserSettings>;
   updateSettings(userId: string, patch: Partial<UserSettings>): Promise<UserSettings>;
 
+  /** Settings rows of every user who has the inbox watcher switched on. */
+  listEmailWatchSettings(): Promise<UserSettings[]>;
+
   listRetailers(): Promise<Retailer[]>;
 
   listProducts(): Promise<Product[]>;

@@ -175,6 +175,23 @@ async function main() {
     })();
     check("users can't read each other's tasks", other === 404);
 
+    // ── inbox watcher: a pasted Pokémon Center email goes through the real pipeline ──
+    const ws = await api('/api/settings', { method: 'PUT', json: { email_watch_enabled: true, imap_user: 'me@gmail.com', imap_password: 'abcd efgh ijkl mnop' } });
+    check('inbox watcher settings saved, password masked', ws.body?.settings?.email_watch_enabled === true && ws.body.settings.imap_password === '••••••••');
+    const badHost = await api('/api/settings', { method: 'PUT', json: { imap_host: 'not a host' } });
+    check('invalid IMAP host rejected', badHost.status === 400);
+    const drop = await api('/api/email-watch/test', {
+      method: 'POST',
+      json: { subject: "It's here! Pokémon Center exclusive drop", body: '<p>Shop now</p><a href="https://www.pokemoncenter.com/en-ca">Shop</a>' },
+    });
+    const dn = drop.body?.result?.notifications ?? [];
+    check('drop email triggers alerts', drop.body?.result?.signal?.matched === true && dn.some((n) => n.channel === 'browser' && n.status === 'sent'), dn.map((n) => `${n.channel}:${n.status}`).join(', '));
+    check('drop alert never uses the email channel', !dn.some((n) => n.channel === 'email'));
+    const spam = await api('/api/email-watch/test', { method: 'POST', json: { from: 'Shop <news@othershop.ca>', subject: 'Pokémon sale' } });
+    check('non-Pokémon-Center email ignored', spam.body?.result?.signal?.matched === false && spam.body.result.notifications.length === 0);
+    const conn = await api('/api/email-watch/check', { method: 'POST' });
+    check('connection test reports a clear status', conn.status === 200 && typeof conn.body?.result?.status === 'string', conn.body?.result?.status);
+
     // ── analytics ──
     const an = (await api('/api/analytics?days=30')).body;
     check('analytics computes', an?.totals?.restocks > 0 && an.byRetailer.length === 7, `${an?.totals?.restocks} restocks in 30d`);

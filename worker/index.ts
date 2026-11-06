@@ -27,6 +27,8 @@ async function main() {
   const store = getStore();
   const scheduler = getScheduler();
   scheduler.start();
+  const { startEmailWatchers } = await import('../lib/emailwatch/runner');
+  startEmailWatchers();
   console.log(`[worker] running against ${store.kind} store`);
 
   setInterval(() => {

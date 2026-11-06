@@ -79,8 +79,30 @@ export const settingsSchema = z
     default_frequency_sec: z.coerce.number().int().min(15).max(86_400),
     quiet_hours_start: z.coerce.number().int().min(0).max(23).nullable(),
     quiet_hours_end: z.coerce.number().int().min(0).max(23).nullable(),
+    email_watch_enabled: z.boolean(),
+    imap_host: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/, 'Enter a mail server host like imap.gmail.com'),
+    imap_port: z.coerce.number().int().min(1).max(65535),
+    imap_user: z.string().trim().max(200).nullable().or(z.literal('').transform(() => null)),
+    imap_password: z
+      .string()
+      .transform((s) => s.replace(/\s+/g, '')) // Gmail shows app passwords in groups of four
+      .pipe(z.string().max(200))
+      .nullable()
+      .or(z.literal('').transform(() => null)),
+    email_watch_senders: z.string().trim().max(500),
+    email_watch_keywords: z.string().trim().max(500),
   })
   .partial();
+
+export const testEmailSchema = z.object({
+  from: z.string().trim().max(300).default('Pokémon Center <pokemoncenter@em.pokemoncenter.com>'),
+  subject: z.string().trim().min(1).max(500),
+  body: z.string().max(100_000).default(''),
+});
 
 export const purchaseSchema = z.object({
   task_id: z.string().uuid().nullable().optional(),

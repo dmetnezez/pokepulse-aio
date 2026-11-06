@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { Bell, Mail, MessageCircle, Monitor, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
+import { EmailWatchCard } from '@/components/EmailWatchCard';
 import { useLive, useToast } from '@/components/LiveProvider';
 import { EmptyState, ErrorBlock, LoadingBlock, PageHeader, Panel, Spinner, Toggle } from '@/components/ui';
 import { api, fmtDateTime, fmtDuration } from '@/lib/client';
@@ -95,6 +96,7 @@ export default function AlertsPage() {
   return (
     <>
       <PageHeader title="Alerts" subtitle="Where restock alerts go, and everything that has been sent" />
+      <EmailWatchCard />
       <div className="grid gap-6 xl:grid-cols-[440px_minmax(0,1fr)]">
         <form onSubmit={save} className="space-y-4">
           <ChannelCard icon={CHANNEL_ICON.discord} title="Discord webhook" configured={Boolean(data?.settings.discord_configured)} onTest={() => test('discord')} testing={testing === 'discord'}>

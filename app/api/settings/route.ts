@@ -13,6 +13,7 @@ function present(s: UserSettings) {
     ...s,
     discord_webhook_url: mask(s.discord_webhook_url),
     telegram_bot_token: mask(s.telegram_bot_token),
+    imap_password: s.imap_password ? '••••••••' : null,
     discord_configured: Boolean(s.discord_webhook_url),
     telegram_configured: Boolean(s.telegram_bot_token && s.telegram_chat_id),
     email_provider_configured: Boolean(process.env.RESEND_API_KEY),
@@ -28,9 +29,20 @@ export const PUT = route(async (req) => {
   const user = await requireUser();
   const body = (await readJson(req)) as Record<string, unknown>;
   // Masked values coming back unchanged mean "keep the stored secret".
-  for (const k of ['discord_webhook_url', 'telegram_bot_token']) {
+  for (const k of ['discord_webhook_url', 'telegram_bot_token', 'imap_password']) {
     if (typeof body[k] === 'string' && (body[k] as string).startsWith('••••')) delete body[k];
   }
-  const patch = settingsSchema.parse(body);
-  return { settings: present(await getStore().updateSettings(user.id, patch)) };
+  const patch: Partial<UserSettings> = settingsSchema.parse(body);
+  const store = getStore();
+  const before = await store.getSettings(user.id);
+  // New mailbox or credentials → start watching from "now" again and clear the old status.
+  if (
+    (patch.imap_user !== undefined && patch.imap_user !== before.imap_user) ||
+    (patch.imap_host !== undefined && patch.imap_host !== before.imap_host) ||
+    (patch.imap_password !== undefined && patch.imap_password !== before.imap_password)
+  ) {
+    patch.email_watch_last_uid = null;
+    patch.email_watch_status = null;
+  }
+  return { settings: present(await store.updateSettings(user.id, patch)) };
 });

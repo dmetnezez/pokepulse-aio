@@ -50,13 +50,15 @@ export function alertText(a: Alert): string {
   return [
     a.title,
     `Retailer: ${a.retailer}`,
-    `Price: ${fmtCad(a.price)}${a.maxPrice != null ? ` (max ${fmtCad(a.maxPrice)})` : ''}`,
+    `Price: ${a.price == null ? 'see product page' : fmtCad(a.price)}${a.maxPrice != null ? ` (max ${fmtCad(a.maxPrice)})` : ''}`,
     `Stock: ${STATUS_TEXT[a.status]}`,
     `Quantity wanted: ${a.quantity}`,
     `Link: ${a.url}`,
     a.source === 'simulated'
       ? 'Data source: SIMULATED — not verified live inventory.'
-      : 'Data source: live retailer integration.',
+      : a.source === 'email'
+        ? 'Triggered by a Pokémon Center email — open the link fast, stock may already be in a queue.'
+        : 'Data source: live retailer integration.',
   ].join('\n');
 }
 
@@ -92,16 +94,21 @@ export async function sendDiscord(webhookUrl: string, a: Alert) {
       {
         title: a.title.slice(0, 250),
         url: a.url,
-        color: a.source === 'simulated' ? 0x6b7280 : 0x8b5cf6,
+        color: a.source === 'simulated' ? 0x6b7280 : a.source === 'email' ? 0xf5c518 : 0x8b5cf6,
         fields: [
           { name: 'Retailer', value: a.retailer, inline: true },
-          { name: 'Price', value: fmtCad(a.price), inline: true },
+          { name: 'Price', value: a.price == null ? 'See page' : fmtCad(a.price), inline: true },
           { name: 'Stock', value: STATUS_TEXT[a.status], inline: true },
           { name: 'Quantity wanted', value: String(a.quantity), inline: true },
           { name: 'Product link', value: `[Open retailer page](${a.url})` },
         ],
         footer: {
-          text: a.source === 'simulated' ? 'SIMULATED data — not verified live inventory' : 'Live retailer integration',
+          text:
+            a.source === 'simulated'
+              ? 'SIMULATED data — not verified live inventory'
+              : a.source === 'email'
+                ? 'Triggered by a Pokémon Center email'
+                : 'Live retailer integration',
         },
         timestamp: a.detectedAt,
       },
@@ -114,10 +121,10 @@ export async function sendTelegram(token: string, chatId: string, a: Alert) {
   const html = [
     `<b>${escapeHtml(a.title)}</b>`,
     `Retailer: ${escapeHtml(a.retailer)}`,
-    `Price: ${fmtCad(a.price)}`,
+    `Price: ${a.price == null ? 'see product page' : fmtCad(a.price)}`,
     `Stock: ${STATUS_TEXT[a.status]} · qty ${a.quantity}`,
     `<a href="${escapeHtml(a.url)}">Open product page</a>`,
-    a.source === 'simulated' ? '<i>Simulated data — not verified live inventory</i>' : '',
+    a.source === 'simulated' ? '<i>Simulated data — not verified live inventory</i>' : a.source === 'email' ? '<i>Triggered by a Pokémon Center email</i>' : '',
   ].join('\n');
   await postJson(`https://api.telegram.org/bot${token}/sendMessage`, {
     chat_id: chatId,

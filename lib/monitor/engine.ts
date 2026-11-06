@@ -8,6 +8,7 @@ import { IntegrationError, resolveAdapter, type CheckResult } from './adapters';
 const CHECK_SAMPLE_MS = 5 * 60_000;
 const MAX_BACKOFF_SEC = 30 * 60;
 const NON_RETRYABLE_RECHECK_SEC = 10 * 60;
+const EMAIL_HOLD_MS = 30 * 60_000;
 
 const g = globalThis as unknown as { __pokepulseLastSample?: Map<string, number> };
 const lastSample = (g.__pokepulseLastSample ??= new Map());
@@ -30,6 +31,21 @@ export async function checkProduct(product: Product, tasks: MonitoringTask[], so
   const store = getStore();
   const now = new Date();
   const nowIso = now.toISOString();
+
+  // A real Pokémon Center email beats the simulator: hold that state for 30 minutes.
+  if (
+    source === 'simulated' &&
+    product.data_source === 'email' &&
+    product.last_restock_at &&
+    now.getTime() - new Date(product.last_restock_at).getTime() < EMAIL_HOLD_MS
+  ) {
+    await Promise.all(
+      tasks.map((t) =>
+        store.updateTask(t.id, { last_checked_at: nowIso, next_check_at: new Date(now.getTime() + jitter(t.frequency_sec)).toISOString() }),
+      ),
+    );
+    return { ok: true, event: 'check' };
+  }
 
   let result: CheckResult;
   try {

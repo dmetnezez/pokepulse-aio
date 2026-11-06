@@ -35,6 +35,26 @@ Set `SIMULATION_INTENSITY=4` for a busier demo with more frequent simulated rest
    - **Separate worker:** set `WORKER_MODE=external` on the web app, then run `npm run worker` as its own process. The web server sends events to browsers by polling Postgres.
 5. Optional: schedule `select public.prune_stock_checks()` daily with pg_cron.
 
+## Pokémon Center inbox watcher (free, no scraping)
+
+Pokémon Center emails subscribers when a drop goes live. PokéPulse can watch **your own inbox** over IMAP and turn those emails into instant Discord / Telegram / browser alerts:
+
+1. Subscribe to Pokémon Center emails and turn on "Notify me" for the products you want.
+2. Create an **app password** for your email (Gmail: Google Account → Security → 2-Step Verification → App passwords). Never use your normal password.
+3. In PokéPulse → **Alerts → Pokémon Center inbox watcher**: enter your email and app password, click **Test connection**, then switch it on.
+4. Set up a Discord webhook and/or Telegram bot on the same page, or keep a PokéPulse tab open for browser alerts.
+
+How it behaves:
+
+- Your inbox is checked every 20 seconds (`EMAIL_WATCH_INTERVAL_SEC`). It's read-only: nothing is marked read, moved or deleted.
+- On first connect it only records where your inbox is now. Old emails never trigger alerts.
+- Emails from senders on the watch list (default `pokemoncenter.com`) trigger an alert. You can also require keywords.
+- If the email names a product you have a Pokémon Center task for, that task flips to **Restock detected** and uses the task's channels and quantity. Otherwise a general "drop" alert is sent with the best link from the email.
+- Alerts never go to the email channel, so nothing loops back into the inbox. They're tagged **EMAIL**, not simulated or live.
+- Use **Test with a sample or pasted email** to check your filters and channels before a real drop.
+
+It runs wherever PokéPulse runs, so your computer has to be on and `npm start` running for it to watch around the clock.
+
 ## Simulated vs. live data
 
 This is a hard rule throughout the app. **Every stock data point records where it came from** (`data_source = 'simulated' | 'live'`), and the UI labels it everywhere:
@@ -71,6 +91,7 @@ Tasks set to "live" for a retailer with no integration fail on purpose: they sho
 - No working around purchase limits.
 - No storing payment details.
 - No automatic checkout.
+- The inbox watcher only reads emails Pokémon Center sends you; it never contacts pokemoncenter.com.
 
 The Purchase Assistant gets you to the retailer's own page with your price and quantity already decided. You check out yourself.
 

@@ -15,6 +15,10 @@ import type {
 import { RETAILERS } from '../retailers';
 import type { HistoryQuery, LogQuery, Store } from './types';
 
+const SETTINGS_COLUMNS =
+  'id,alert_email,discord_webhook_url,telegram_bot_token,telegram_chat_id,browser_notifications,default_frequency_sec,quiet_hours_start,quiet_hours_end,' +
+  'email_watch_enabled,imap_host,imap_port,imap_user,imap_password,email_watch_senders,email_watch_keywords,email_watch_last_uid,email_watch_status,email_watch_checked_at';
+
 /**
  * Supabase/Postgres store. Uses the service-role key server-side and always filters by user_id
  * for user-owned data. Safe to share between the Next.js server and one or more workers.
@@ -58,16 +62,24 @@ export class SupabaseStore implements Store {
   async getSettings(userId: string): Promise<UserSettings> {
     const res = await this.client
       .from('profiles')
-      .select('id,alert_email,discord_webhook_url,telegram_bot_token,telegram_chat_id,browser_notifications,default_frequency_sec,quiet_hours_start,quiet_hours_end')
+      .select(SETTINGS_COLUMNS)
       .eq('id', userId)
       .single();
-    const { id, ...rest } = this.must(res, 'getSettings') as Omit<UserSettings, 'user_id'> & { id: string };
+    const { id, ...rest } = this.must(res, 'getSettings') as unknown as Omit<UserSettings, 'user_id'> & { id: string };
     return { ...rest, user_id: id };
   }
   async updateSettings(userId: string, patch: Partial<UserSettings>) {
     const { user_id: _ignored, ...rest } = patch;
     this.must(await this.client.from('profiles').update({ ...rest, updated_at: new Date().toISOString() }).eq('id', userId), 'updateSettings');
     return this.getSettings(userId);
+  }
+
+  async listEmailWatchSettings() {
+    const rows = this.must(
+      await this.client.from('profiles').select(SETTINGS_COLUMNS).eq('email_watch_enabled', true),
+      'listEmailWatchSettings',
+    ) as unknown as (Omit<UserSettings, 'user_id'> & { id: string })[];
+    return rows.map(({ id, ...rest }) => ({ ...rest, user_id: id }));
   }
 
   async listRetailers() {

@@ -15,6 +15,7 @@ import type {
 } from '../types';
 import { RETAILERS } from '../retailers';
 import { buildSeedCatalogue } from '../seed';
+import { EMAIL_WATCH_DEFAULTS } from '../emailwatch/defaults';
 import type { HistoryQuery, LogQuery, Store } from './types';
 
 /**
@@ -52,6 +53,7 @@ function defaultSettings(userId: string, email: string | null): UserSettings {
     default_frequency_sec: 60,
     quiet_hours_start: null,
     quiet_hours_end: null,
+    ...EMAIL_WATCH_DEFAULTS,
   };
 }
 
@@ -146,7 +148,7 @@ export class LocalStore implements Store {
       s = defaultSettings(userId, null);
       this.db.settings.push(s);
     }
-    return { ...s };
+    return { ...EMAIL_WATCH_DEFAULTS, ...s };
   }
   async updateSettings(userId: string, patch: Partial<UserSettings>) {
     await this.getSettings(userId);
@@ -154,6 +156,10 @@ export class LocalStore implements Store {
     Object.assign(s, patch, { user_id: userId });
     this.scheduleSave();
     return { ...s };
+  }
+
+  async listEmailWatchSettings() {
+    return this.db.settings.filter((s) => s.email_watch_enabled).map((s) => ({ ...EMAIL_WATCH_DEFAULTS, ...s }));
   }
 
   async listRetailers() {

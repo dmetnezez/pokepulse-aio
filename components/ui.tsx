@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { AlertTriangle, CheckCircle2, CircleDashed, FlaskConical, Loader2, PauseCircle, Radar, ShieldCheck, X, XCircle, Zap } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CircleDashed, FlaskConical, Loader2, Mail, PauseCircle, Radar, ShieldCheck, X, XCircle, Zap } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { RETAILER_MAP } from '@/lib/retailers';
 import type { DataSource, RetailerId, StockStatus, TaskStatus } from '@/lib/types';
@@ -98,6 +98,13 @@ export function StockBadge({ status }: { status: StockStatus }) {
 
 /** Always shown next to stock data so simulated numbers are never mistaken for verified live inventory. */
 export function SourceBadge({ source, compact }: { source: DataSource; compact?: boolean }) {
+  if (source === 'email')
+    return (
+      <span title="Triggered by a Pokémon Center email in your inbox" className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300 ring-1 ring-inset ring-amber-400/30">
+        <Mail className="h-3 w-3" />
+        {compact ? 'Email' : 'Retailer email'}
+      </span>
+    );
   return source === 'live' ? (
     <span title="Returned by an authorized retailer integration" className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 ring-1 ring-inset ring-emerald-500/30">
       <ShieldCheck className="h-3 w-3" />
