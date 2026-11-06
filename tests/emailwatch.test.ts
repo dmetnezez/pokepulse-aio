@@ -66,3 +66,18 @@ test('emails are matched to the right tasks', () => {
   const byUrl = parseDropEmail({ from: PC_FROM, subject: 'Hi', text: `go: ${url}?utm=1` }, opts);
   assert.equal(matchTasks(byUrl, '', [task('Something Else Entirely', url)]).length, 1);
 });
+
+test('auto-open only opens pokemoncenter.com https links, once per 2 min', async () => {
+  const { safeOpenUrl, openInBrowser } = await import('../lib/emailwatch/open');
+  assert.equal(safeOpenUrl('https://www.pokemoncenter.com/en-ca/product/1/x'), 'https://www.pokemoncenter.com/en-ca/product/1/x');
+  assert.equal(safeOpenUrl('https://click.em.pokemoncenter.com/?qs=1'), 'https://click.em.pokemoncenter.com/?qs=1');
+  assert.equal(safeOpenUrl('https://pokemoncenter.com.evil.io/x'), DEFAULT_SHOP_URL);
+  assert.equal(safeOpenUrl('http://www.pokemoncenter.com/x'), DEFAULT_SHOP_URL);
+  assert.equal(safeOpenUrl('javascript:alert(1)'), DEFAULT_SHOP_URL);
+  const opened: string[] = [];
+  (globalThis as { __pokepulseOpener?: (u: string) => void }).__pokepulseOpener = (u) => opened.push(u);
+  assert.equal(openInBrowser('https://www.pokemoncenter.com/en-ca/product/9/y').opened, true);
+  assert.equal(openInBrowser('https://www.pokemoncenter.com/en-ca/product/9/y').opened, false);
+  assert.deepEqual(opened, ['https://www.pokemoncenter.com/en-ca/product/9/y']);
+  delete (globalThis as { __pokepulseOpener?: unknown }).__pokepulseOpener;
+});

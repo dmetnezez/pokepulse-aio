@@ -57,7 +57,9 @@ test('inbox watcher end to end over IMAP', async () => {
   assert.match(bad.status, /Login failed|Error/);
 
   // First good poll: only records the newest UID — the old email must NOT alert.
-  await store.updateSettings(user.id, { imap_password: 'app-password-123', email_watch_status: null });
+  await store.updateSettings(user.id, { imap_password: 'app-password-123', email_watch_status: null, auto_open_links: true });
+  const opened: string[] = [];
+  (globalThis as { __pokepulseOpener?: (u: string) => void }).__pokepulseOpener = (u) => opened.push(u);
   const first = await pollUser(await settings());
   assert.equal(first.ok, true, first.status);
   assert.equal(first.lastUid, 1);
@@ -90,6 +92,10 @@ test('inbox watcher end to end over IMAP', async () => {
   assert.deepEqual(notes.map((n) => `${n.channel}:${n.status}`), ['browser:sent'], 'email channel must never be used (would loop back into the inbox)');
   assert.match(notes[0].title, /^Pokémon Center email: Prismatic Evolutions/);
   assert.ok(events.includes('activity') && events.includes('task'));
+
+  // Auto-open fired exactly once, for the drop email only, with a pokemoncenter.com URL.
+  assert.equal(opened.length, 1);
+  assert.match(opened[0], /^https:\/\/www\.pokemoncenter\.com\//);
 
   // Read-only: nothing was marked \Seen.
   assert.ok(server.getMailbox('INBOX').messages.every((m) => !m.flags.includes('\\Seen')));

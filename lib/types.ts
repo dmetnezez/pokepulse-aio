@@ -111,6 +111,8 @@ export interface UserSettings {
   email_watch_last_uid: number | null;
   email_watch_status: string | null;
   email_watch_checked_at: string | null;
+  /** open the drop page in the default browser on this computer when a drop email arrives */
+  auto_open_links: boolean;
 }
 
 export interface MonitoringTask {

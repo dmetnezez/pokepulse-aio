@@ -17,7 +17,7 @@ import type { HistoryQuery, LogQuery, Store } from './types';
 
 const SETTINGS_COLUMNS =
   'id,alert_email,discord_webhook_url,telegram_bot_token,telegram_chat_id,browser_notifications,default_frequency_sec,quiet_hours_start,quiet_hours_end,' +
-  'email_watch_enabled,imap_host,imap_port,imap_user,imap_password,email_watch_senders,email_watch_keywords,email_watch_last_uid,email_watch_status,email_watch_checked_at';
+  'email_watch_enabled,imap_host,imap_port,imap_user,imap_password,email_watch_senders,email_watch_keywords,email_watch_last_uid,email_watch_status,email_watch_checked_at,auto_open_links';
 
 /**
  * Supabase/Postgres store. Uses the service-role key server-side and always filters by user_id

@@ -95,6 +95,7 @@ export const settingsSchema = z
       .or(z.literal('').transform(() => null)),
     email_watch_senders: z.string().trim().max(500),
     email_watch_keywords: z.string().trim().max(500),
+    auto_open_links: z.boolean(),
   })
   .partial();
 

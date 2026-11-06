@@ -61,6 +61,7 @@ How it behaves:
 - Emails from senders on the watch list (default `pokemoncenter.com`) trigger an alert. You can also require keywords.
 - If the email names a product you have a Pokémon Center task for, that task flips to **Restock detected** and uses the task's channels and quantity. Otherwise a general "drop" alert is sent with the best link from the email.
 - Alerts never go to the email channel, so nothing loops back into the inbox. They're tagged **EMAIL**, not simulated or live.
+- **Auto-open** (optional, off by default): when a drop email arrives, the computer running PokéPulse opens the page in your normal browser, the same as clicking the link. Only `https://*.pokemoncenter.com` links are ever opened, at most once per link every 2 minutes. You handle the queue, cart and checkout yourself.
 - Use **Test with a sample or pasted email** to check your filters and channels before a real drop.
 
 It runs wherever PokéPulse runs, so your computer has to be on and `npm start` running for it to watch around the clock.

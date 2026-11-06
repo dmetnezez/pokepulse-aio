@@ -18,6 +18,7 @@ interface WatchSettings {
   email_watch_keywords: string;
   email_watch_status: string | null;
   email_watch_checked_at: string | null;
+  auto_open_links: boolean;
 }
 
 const PROVIDERS: Record<string, { host: string; port: number; help: string }> = {
@@ -72,6 +73,7 @@ export function EmailWatchCard() {
           imap_password: form.imap_password ?? '',
           email_watch_senders: form.email_watch_senders,
           email_watch_keywords: form.email_watch_keywords,
+          auto_open_links: form.auto_open_links,
         },
       });
       setDirty(false);
@@ -104,13 +106,14 @@ export function EmailWatchCard() {
     setBusy('test');
     try {
       const { result } = await api<{
-        result: { signal: { matched: boolean; reason: string; url: string }; matchedTasks: { product_name: string }[]; notifications: { channel: string; status: string; error: string | null }[] };
+        result: { opened?: string | null; signal: { matched: boolean; reason: string; url: string }; matchedTasks: { product_name: string }[]; notifications: { channel: string; status: string; error: string | null }[] };
       }>('/api/email-watch/test', { method: 'POST', json: { subject: testSubject, body: testBody } });
       const s = result.signal;
       setLastTest(
         s.matched
           ? `Matched → ${result.matchedTasks.length ? `task “${result.matchedTasks.map((t) => t.product_name).join('”, “')}”` : 'general drop alert'} · link ${s.url} · ` +
-              result.notifications.map((n) => `${n.channel}: ${n.status}${n.error ? ` (${n.error})` : ''}`).join(', ')
+              result.notifications.map((n) => `${n.channel}: ${n.status}${n.error ? ` (${n.error})` : ''}`).join(', ') +
+              (result.opened ? ` · opened ${result.opened} in your browser` : '')
           : `Not matched — ${s.reason}`,
       );
     } catch (err) {
@@ -210,6 +213,13 @@ export function EmailWatchCard() {
               <input className="input" placeholder="e.g. available, restock, it's here" value={form.email_watch_keywords} onChange={(e) => set('email_watch_keywords', e.target.value)} />
               <p className="mt-1 text-xs text-ink-400">Leave empty to alert on every Pokémon Center email.</p>
             </div>
+          </div>
+          <div className="rounded-lg border border-ink-700 bg-ink-900/60 p-3">
+            <Toggle checked={form.auto_open_links} onChange={(v) => set('auto_open_links', v)} label="Auto-open the drop page in my browser" />
+            <p className="mt-1.5 text-xs text-ink-400">
+              When a drop email arrives, this computer opens the Pokémon Center page in your normal, logged-in browser — like clicking the link yourself.
+              Only pokemoncenter.com links are ever opened. You do everything else (queue, cart, checkout).
+            </p>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             <button className="btn-primary" disabled={busy !== null || !dirty} onClick={() => save()}>

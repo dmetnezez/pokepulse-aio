@@ -1,12 +1,15 @@
 import type { Channel, MonitoringTask, NotificationRow, UserSettings } from '../types';
 import { getStore } from '../store';
 import { dispatchAlert, type Alert } from '../notify';
+import { openInBrowser } from './open';
 import { htmlToText, matchTasks, parseDropEmail, type DropSignal, type IncomingEmail } from './parse';
 
 export interface ProcessResult {
   signal: DropSignal;
   matchedTasks: { id: string; product_name: string }[];
   notifications: NotificationRow[];
+  /** URL auto-opened in the browser, if any */
+  opened?: string | null;
 }
 
 /** Never forward to email — that would land back in the inbox we are watching. */
@@ -101,5 +104,16 @@ export async function processDropEmail(userId: string, email: IncomingEmail, set
     await log('info', `Inbox: Pokémon Center email "${email.subject.slice(0, 80)}" — drop alert sent`, null, { url: signal.url });
   }
 
-  return { signal, matchedTasks: matched.map((t) => ({ id: t.id, product_name: t.product_name })), notifications };
+  // Auto-open only when the server runs on the user's own computer (local mode) unless forced on.
+  let opened: string | null = null;
+  if (settings.auto_open_links && (store.kind === 'local' || process.env.AUTO_OPEN === 'on')) {
+    const target = signal.url.includes('/product/') || !matched.length ? signal.url : matched[0].product_url;
+    const r = openInBrowser(target);
+    if (r.opened) {
+      opened = r.url;
+      await log('info', `Inbox: opened ${r.url} in your browser`);
+    }
+  }
+
+  return { signal, matchedTasks: matched.map((t) => ({ id: t.id, product_name: t.product_name })), notifications, opened };
 }
