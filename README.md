@@ -8,6 +8,16 @@ A Pokémon TCG restock monitor and shopping assistant for Canadian retailers: Po
 
 ---
 
+## Easiest way to start (no terminal)
+
+1. On GitHub click **Code → Download ZIP**, then unzip it anywhere (e.g. Desktop).
+2. Install **Node.js LTS** from https://nodejs.org (one time).
+3. Double-click **`Start PokePulse (Windows).bat`** or **`Start PokePulse (Mac).command`**.
+   - First run installs and builds automatically (a few minutes), then opens http://localhost:3000.
+   - Keep that window open; closing it stops the bot. The Mac launcher also keeps the Mac awake.
+   - Mac: if it's blocked as "unidentified developer", right-click it → **Open** → **Open** (only needed once).
+4. To update later: download the new ZIP and copy your `.data` folder into it (that's where your account and settings live).
+
 ## Quick start (local demo, no setup)
 
 ```bash
